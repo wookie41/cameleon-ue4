@@ -4,7 +4,7 @@
 #include "CameleonGameHUD.h"
 #include "CameleonGameCharacter.h"
 #include "UObject/ConstructorHelpers.h"
-
+#include "CameleonPlayerController.h"
 ACameleonGameGameMode::ACameleonGameGameMode()
 	: Super()
 {
@@ -14,4 +14,5 @@ ACameleonGameGameMode::ACameleonGameGameMode()
 
 	// use our custom HUD class
 	HUDClass = ACameleonGameHUD::StaticClass();
+    PlayerControllerClass = ACameleonPlayerController::StaticClass();
 }
