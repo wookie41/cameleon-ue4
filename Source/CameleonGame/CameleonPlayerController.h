@@ -9,78 +9,107 @@
 UCLASS()
 class CAMELEONGAME_API ACameleonPlayerController : public APlayerController
 {
-    GENERATED_BODY()
-  public:
-    ACameleonPlayerController();
+	GENERATED_BODY()
+public:
 
-    // Actor to spawn as controllable character marker //
-    UPROPERTY(EditDefaultsOnly)
-    TSubclassOf<class AControllableCharacterMarker> MarkerClass;
+	ACameleonPlayerController();
 
-    UPROPERTY(EditDefaultsOnly)
-    float TransitionTimeSeconds = 1.5;
+	// Actor to spawn as controllable character marker //
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<class AControllableCharacterMarker> MarkerClass;
 
-  protected:
-    virtual void SetupInputComponent() override;
-    virtual void BeginPlay() override;
-    virtual void Tick(float DeltaSeconds) override;
+	UPROPERTY(EditDefaultsOnly)
+	float TransitionTimeSeconds = 1.5;
 
-    UFUNCTION()
-    void SetNextAsActive();
+	UFUNCTION(BlueprintCallable)
+	void AddInteractable(AActor* aInteractable);
 
-    UFUNCTION()
-    void SetPreviousAsActive();
+	UFUNCTION(BlueprintCallable)
+	void RemoveInteractable(AActor* aInteractable);
 
-    UFUNCTION()
-    void SwitchCharacter();
+protected:
+	virtual void SetupInputComponent() override;
+	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 
-    UFUNCTION()
-    void OnActorBeginOverlap(UPrimitiveComponent* OverlappedComponent,
-                             AActor* OtherActor,
-                             UPrimitiveComponent* OtherComp,
-                             int32 OtherBodyIndex,
-                             bool bFromSweep,
-                             const FHitResult& SweepResult);
+	// Input handling
 
-    UFUNCTION()
-    void OnActorEndOverlap(UPrimitiveComponent* OverlappedComponent,
-                           AActor* OtherActor,
-                           UPrimitiveComponent* OtherComp,
-                           int32 OtherBodyIndex);
+	UFUNCTION()
+	void SetNextAsActive();
 
-  private:
-    // Maximal distance at which we can take control over a character //
+	UFUNCTION()
+	void SetPreviousAsActive();
 
-    UPROPERTY()
-    FVector ScanDistance = { 2500, 1000, 350 };
+	UFUNCTION()
+	void SwitchCharacter();
 
-    // Map which holds controllable character in player's sight along with their markers //
+	UFUNCTION()
+	void UseInteractable();
 
-    UPROPERTY()
-    TMap<ACharacter*, class AControllableCharacterMarker*> ControllableCharacters;
+	UFUNCTION()
+	void ToggleScanAbility();
 
-    // Box used to determine what is in players view frustum and this what can he take control over //
+	// Scan component overlap handlers
 
-    UPROPERTY()
-    class UBoxComponent* CollisionComponent;
+	UFUNCTION()
+	void OnActorBeginOverlap(UPrimitiveComponent* OverlappedComponent,
+	                         AActor* OtherActor,
+	                         UPrimitiveComponent* OtherComp,
+	                         int32 OtherBodyIndex,
+	                         bool bFromSweep,
+	                         const FHitResult& SweepResult);
 
-    UPROPERTY()
-    int ActiveCharacterIndex = -1;
+	UFUNCTION()
+	void OnActorEndOverlap(UPrimitiveComponent* OverlappedComponent,
+	                       AActor* OtherActor,
+	                       UPrimitiveComponent* OtherComp,
+	                       int32 OtherBodyIndex);
 
-    UPROPERTY()
-    TArray<ACharacter*> CharactersInSight;
+private:
+	// Clears the list of characters in sight that we can take control over, removes their markers //
+	void ClearControllableCharacters();
 
-    // Flag indicating if we can use the switch ability //
+	// Checks if we can see the character, i.e. if it's not blocked by some geometry
+	bool CanWeSee(const ACharacter* OtherCharacter) const;
 
-    UPROPERTY()
-    bool bCanSwitch;
+	// Maximal distance at which we can take control over a character //
 
-    UPROPERTY()
-    bool bInTransition;
+	UPROPERTY()
+	FVector ScanDistance = {2500, 1000, 350};
 
-    UPROPERTY()
-    float TransitionTimer;
+	// Map which holds controllable character in player's sight along with their markers //
 
-    UPROPERTY()
-    class UCameraComponent* CurrentCharacterCamera;
+	UPROPERTY()
+	TMap<ACharacter*, class AControllableCharacterMarker*> ControllableCharacters;
+
+	// Box used to determine what is in players view frustum and this what can he take control over //
+
+	UPROPERTY()
+	class UBoxComponent* CollisionComponent;
+
+	UPROPERTY()
+	int ActiveCharacterIndex = -1;
+
+	UPROPERTY()
+	TArray<ACharacter*> CharactersInSight;
+
+	// Flag indicating if we can use the switch ability //
+
+	UPROPERTY()
+	bool bCanSwitch;
+
+	UPROPERTY()
+	bool bInTransition;
+
+	UPROPERTY()
+	float TransitionTimer;
+
+	UPROPERTY()
+	class UCameraComponent* CurrentCharacterCamera;
+
+	UPROPERTY()
+	TArray<AActor*> Interactables;
+
+	UPROPERTY()
+	class AActor* ActiveInteractableActor;
 };
