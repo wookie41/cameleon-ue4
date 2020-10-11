@@ -3,7 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+
 #include "GameFramework/PlayerController.h"
+#include "GameplayTagContainer.h"
 #include "CameleonPlayerController.generated.h"
 
 UCLASS()
@@ -80,7 +82,7 @@ private:
 	// Map which holds controllable character in player's sight along with their markers //
 
 	UPROPERTY()
-	TMap<ACharacter*, class AControllableCharacterMarker*> ControllableCharacters;
+	TMap<class ACameleonGameCharacter*, class AControllableCharacterMarker*> ControllableCharacters;
 
 	// Box used to determine what is in players view frustum and this what can he take control over //
 
@@ -91,7 +93,7 @@ private:
 	int ActiveCharacterIndex = -1;
 
 	UPROPERTY()
-	TArray<ACharacter*> CharactersInSight;
+    TArray<class ACameleonGameCharacter*> CharactersInSight;
 
 	// Flag indicating if we can use the switch ability //
 
@@ -111,5 +113,8 @@ private:
 	TArray<AActor*> Interactables;
 
 	UPROPERTY()
-	class AActor* ActiveInteractableActor;
+	class AActor* ActiveAInteractable;
+
+	UPROPERTY()
+    FGameplayTagQuery ControllableCharacterQuery;
 };

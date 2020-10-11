@@ -4,71 +4,70 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "GameplayTags.h"
+#include "GameplayTagContainer.h"
 #include "CameleonGameCharacter.generated.h"
 
 class UInputComponent;
 
 UCLASS(config = Game)
-class ACameleonGameCharacter : public ACharacter
+class ACameleonGameCharacter : public ACharacter, public IGameplayTagAssetInterface
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
+public:
+	ACameleonGameCharacter();
 
-    /** First person camera */
-    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
-    class UCameraComponent* FirstPersonCameraComponent;
+	virtual void GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const override;
 
-  public:
-    ACameleonGameCharacter();
+	/** Returns FirstPersonCameraComponent subobject **/
+	FORCEINLINE class UCameraComponent* GetFirstPersonCameraComponent() const
+	{
+		return FirstPersonCameraComponent;
+	}
 
-  protected:
-    virtual void BeginPlay();
+	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+	float BaseTurnRate;
 
-  public:
-    /** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
-    float BaseTurnRate;
+	/** Base look up/down rate, in deg/sec. Other scaling may affect final rate. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+	float BaseLookUpRate;
 
-    /** Base look up/down rate, in deg/sec. Other scaling may affect final rate. */
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
-    float BaseLookUpRate;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+	FGameplayTagContainer GameplayTags;
 
-  protected:
-    /** Handles moving forward/backward */
-    void MoveForward(float Val);
+protected:
 
-    /** Handles stafing movement, left and right */
-    void MoveRight(float Val);
+	virtual void BeginPlay();
 
-    /**
-     * Called via input to turn at a given rate.
-     * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
-     */
-    void TurnAtRate(float Rate);
+	/** Handles moving forward/backward */
+	void MoveForward(float Val);
 
-    /**
-     * Called via input to turn look up/down at a given rate.
-     * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
-     */
-    void LookUpAtRate(float Rate);
+	/** Handles stafing movement, left and right */
+	void MoveRight(float Val);
+
+	/**
+	 * Called via input to turn at a given rate.
+	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
+	 */
+	void TurnAtRate(float Rate);
+
+	/**
+	 * Called via input to turn look up/down at a given rate.
+	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
+	 */
+	void LookUpAtRate(float Rate);
 
 
-  protected:
-    // APawn interface
-    virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
-    // End of APawn interface
+	// APawn interface
 
-    /*
-     * Configures input for touchscreen devices if there is a valid touch interface for doing so
-     *
-     * @param	InputComponent	The input component pointer to bind controls to
-     * @returns true if touch controls were enabled.
-     */
-    bool EnableTouchscreenMovement(UInputComponent* InputComponent);
+	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 
-  public:
-    /** Returns FirstPersonCameraComponent subobject **/
-    FORCEINLINE class UCameraComponent* GetFirstPersonCameraComponent() const
-    {
-        return FirstPersonCameraComponent;
-    }
+	// End of APawn interface
+
+private:
+
+	/** First person camera */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	class UCameraComponent* FirstPersonCameraComponent;
 };

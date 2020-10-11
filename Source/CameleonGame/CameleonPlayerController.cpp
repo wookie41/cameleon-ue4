@@ -5,6 +5,8 @@
 #include "Components/CapsuleComponent.h"
 #include "ControllableCharacterMarker.h"
 #include "Interactable.h"
+#include "GameplayTagContainer.h"
+#include "CameleonGameCharacter.h"
 
 ACameleonPlayerController::ACameleonPlayerController()
 {
@@ -29,6 +31,14 @@ void ACameleonPlayerController::SetupInputComponent()
 
 void ACameleonPlayerController::BeginPlay()
 {
+    Super::BeginPlay();
+
+	auto queryExpression = FGameplayTagQueryExpression()
+		.AllTagsMatch()
+		.AddTag(FGameplayTag::RequestGameplayTag("Controllable"));
+
+	ControllableCharacterQuery.Build(queryExpression);
+	
 	CollisionComponent->SetHiddenInGame(false);
 
 	if (const auto character = GetCharacter())
@@ -72,15 +82,15 @@ void ACameleonPlayerController::Tick(float DeltaSeconds)
 			EnableInput(this);
 
 			ClearControllableCharacters();
-			ActiveInteractableActor = nullptr;
+			ActiveAInteractable = nullptr;
 
 			bInTransition = false;
 			bCanSwitch = true;
 
 			Interactables.Empty();
-			if (auto activeInteractable = Cast<IInteractable>(ActiveInteractableActor))
+			if (auto activeInteractable = Cast<IInteractable>(ActiveAInteractable))
 			{
-				activeInteractable->Execute_SetInteractableActive(ActiveInteractableActor, false);
+				activeInteractable->Execute_SetInteractableActive(ActiveAInteractable, false);
 			}
 
 			CollisionComponent->SetGenerateOverlapEvents(true);
@@ -95,7 +105,7 @@ void ACameleonPlayerController::Tick(float DeltaSeconds)
 	{
 		float largestDot = 0;
 		AActor* activeInteractableActor = nullptr;
-		AActor* lastActiveInteractableActor = ActiveInteractableActor;
+		AActor* lastActiveInteractableActor = ActiveAInteractable;
 
 		// Find the interactable that the player is facing by calculating the dot product
 		// of the eye vector and the direction to the interactable
@@ -137,7 +147,7 @@ void ACameleonPlayerController::Tick(float DeltaSeconds)
 					activeInteractableActor, true);
 			}
 
-			ActiveInteractableActor = activeInteractableActor;
+			ActiveAInteractable = activeInteractableActor;
 		}
 	}
 }
@@ -145,7 +155,7 @@ void ACameleonPlayerController::Tick(float DeltaSeconds)
 void ACameleonPlayerController::AddInteractable(AActor* aInteractable)
 {
 	if (aInteractable->Implements<UInteractable>() &&
-        Cast<IInteractable>(aInteractable)->Execute_IsUseable(aInteractable))
+		Cast<IInteractable>(aInteractable)->Execute_IsUseable(aInteractable))
 	{
 		Interactables.Add(aInteractable);
 	}
@@ -153,9 +163,9 @@ void ACameleonPlayerController::AddInteractable(AActor* aInteractable)
 
 void ACameleonPlayerController::RemoveInteractable(AActor* aInteractable)
 {
-	if (aInteractable == ActiveInteractableActor)
+	if (aInteractable == ActiveAInteractable)
 	{
-		ActiveInteractableActor = nullptr;
+		ActiveAInteractable = nullptr;
 	}
 	Cast<IInteractable>(aInteractable)->Execute_SetInteractableActive(aInteractable, false);
 	Interactables.Remove(aInteractable);
@@ -217,7 +227,7 @@ void ACameleonPlayerController::SwitchCharacter()
 
 		if (!CanWeSee(characterToUse))
 		{
-            return;
+			return;
 		}
 
 		auto mesh = characterToUse->GetMesh();
@@ -243,18 +253,18 @@ void ACameleonPlayerController::SwitchCharacter()
 
 void ACameleonPlayerController::UseInteractable()
 {
-	if (ActiveInteractableActor)
+	if (ActiveAInteractable)
 	{
-        auto interactable = Cast<IInteractable>(ActiveInteractableActor);
-        interactable->Execute_Interact(ActiveInteractableActor);
+		auto interactable = Cast<IInteractable>(ActiveAInteractable);
+		interactable->Execute_Interact(ActiveAInteractable);
 
 		// Remove the interactable if it can't be used anymore
-		if (!interactable->Execute_IsUseable(ActiveInteractableActor))
-        {
-            interactable->Execute_SetInteractableActive(ActiveInteractableActor, false);
-            Interactables.Remove(ActiveInteractableActor);
-            ActiveInteractableActor = nullptr;
-        }
+		if (!interactable->Execute_IsUseable(ActiveAInteractable))
+		{
+			interactable->Execute_SetInteractableActive(ActiveAInteractable, false);
+			Interactables.Remove(ActiveAInteractable);
+			ActiveAInteractable = nullptr;
+		}
 	}
 }
 
@@ -297,7 +307,7 @@ void ACameleonPlayerController::OnActorBeginOverlap(UPrimitiveComponent* Overlap
 	{
 		return;
 	}
-	auto overlappedCharacter = Cast<ACharacter>(OtherActor);
+	auto overlappedCharacter = Cast<ACameleonGameCharacter>(OtherActor);
 
 	if (!overlappedCharacter)
 	{
@@ -311,7 +321,9 @@ void ACameleonPlayerController::OnActorBeginOverlap(UPrimitiveComponent* Overlap
 		return;
 	}
 
-	if (!CanWeSee(overlappedCharacter))
+	FGameplayTagContainer characterTags;
+	overlappedCharacter->GetOwnedGameplayTags(characterTags);
+	if (!CanWeSee(overlappedCharacter) || !ControllableCharacterQuery.Matches(characterTags))
 	{
 		return;
 	}
@@ -394,7 +406,7 @@ void ACameleonPlayerController::OnActorEndOverlap(UPrimitiveComponent* Overlappe
 		return;
 	}
 
-	if (auto character = Cast<ACharacter>(OtherActor)) // make sure the overlapped actor is a character
+	if (auto character = Cast<ACameleonGameCharacter>(OtherActor)) // make sure the overlapped actor is a character
 	{
 		// Sanity check
 		if (character == GetCharacter())
@@ -461,7 +473,7 @@ bool ACameleonPlayerController::CanWeSee(const ACharacter* OtherCharacter) const
 	GetWorld()->LineTraceSingleByChannel(hitResult,
 	                                     CurrentCharacterCamera->GetComponentLocation() +
 	                                     CurrentCharacterCamera->GetForwardVector() * 100,
-                                         OtherCharacter->GetActorLocation(), ECC_Camera);
+	                                     OtherCharacter->GetActorLocation(), ECC_Camera);
 
-    return OtherCharacter == hitResult.Actor;
+	return OtherCharacter == hitResult.Actor;
 }

@@ -26,6 +26,11 @@ ACameleonGameCharacter::ACameleonGameCharacter()
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 }
 
+void ACameleonGameCharacter::GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const
+{
+	TagContainer = GameplayTags;
+}
+
 void ACameleonGameCharacter::BeginPlay()
 {
 	// Call the base class  
